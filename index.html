@@ -1,5 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>숭이둥이 플래너</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#7cc0ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="숭이둥이">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Jua&family=Gowun+Dodum&display=swap">
 <style>
@@ -16,6 +27,9 @@
   color-scheme:light;
 }
 html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;-webkit-text-size-adjust:100%}
+img{max-width:100%}
 body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -57,10 +71,6 @@ button{cursor:pointer}
 .chip{font-size:12.5px;padding:2px 8px;border-radius:999px;background:#eef5fc;border:1px solid var(--line);white-space:nowrap}
 .w-tip{grid-column:1/-1;font-size:13px;color:#3c6a3a;border-top:1px dashed var(--line);padding-top:6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
 .linkbtn{border:none;background:none;color:var(--accent);font-size:13px;padding:0;text-decoration:underline}
-.wform{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:end}
-.wform label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
-.wform input,.wform select{width:84px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:#fff}
-.wform select{width:auto}
 
 /* board */
 main{padding-block:14px 24px}
@@ -157,7 +167,20 @@ main{padding-block:14px 24px}
   .add input[type=date]{flex:1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.hours{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+.hours div{display:flex;align-items:center;gap:3px;font-size:12px;color:var(--muted)}
+.hours b{font-family:var(--f-pixel);font-weight:400;color:var(--ink);font-size:14px}
+.h-icon{width:20px;height:20px}
+.city{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center}
+.city select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:2px 4px;font-size:13px}
+.setup p{margin:0 0 10px;line-height:1.6}
+.setup .row{display:flex;gap:6px;flex-wrap:wrap}
+.setup input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:8px;background:#fbfdff}
+.setup hr{border:none;border-top:1px dashed var(--line);margin:14px 0}
+.setup .note{font-size:12.5px;color:var(--muted)}
 </style>
+</head>
+<body>
 
 <div class="sky">
   <div class="wrap top">
@@ -165,6 +188,7 @@ main{padding-block:14px 24px}
       <button class="tab" role="tab" data-view="dash" aria-selected="true">🏠 대시보드</button>
       <button class="tab" role="tab" data-view="숭이" aria-selected="false"><span class="dot" style="background:var(--soong)"></span>숭이</button>
       <button class="tab" role="tab" data-view="둥이" aria-selected="false"><span class="dot" style="background:var(--doong)"></span>둥이</button>
+      <button class="tab" id="shareBtn" type="button">🔗 공유</button>
     </nav>
     <div class="clockbox">
       <div class="dateline" id="dateline">&nbsp;</div>
@@ -243,6 +267,27 @@ main{padding-block:14px 24px}
     </form>
   </div>
 </div>
+<div class="overlay" id="setup" hidden>
+  <div class="modal setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <h3 id="setupTitle">함께 쓰기</h3>
+    <div id="setupStart">
+      <p>로그인 없이 <b>링크 하나</b>로 둘이 같은 플래너를 써요.<br>한 사람이 만들고, 생긴 링크를 상대에게 보내면 끝이에요.</p>
+      <button class="btn" id="createBtn" type="button">새 가족 플래너 만들기</button>
+      <hr>
+      <form id="joinForm">
+        <label for="joinCode" class="note">받은 링크나 코드가 있다면 붙여넣기</label>
+        <div class="row"><input id="joinCode" type="text" placeholder="https://…#코드"><button class="btn ghost" type="submit">연결</button></div>
+      </form>
+    </div>
+    <div id="setupShare" hidden>
+      <p>이 링크를 남편(아내)에게 카톡으로 보내 주세요.<br>같은 링크로 열면 둘의 달력과 할 일이 자동으로 맞춰져요.</p>
+      <div class="row"><input id="shareLink" type="text" readonly aria-label="공유 링크"><button class="btn" id="copyBtn" type="button">복사</button></div>
+      <p class="note" style="margin-top:10px">⚠ 이 링크를 아는 사람은 누구나 보고 고칠 수 있어요. 가족끼리만 나눠 주세요.<br>📱 휴대폰에서는 브라우저 메뉴의 <b>'홈 화면에 추가'</b>를 누르면 앱처럼 쓸 수 있어요.</p>
+      <button class="linkbtn" id="newFromShare" type="button">다른 플래너 만들기 / 연결하기</button>
+    </div>
+    <div class="mactions"><button class="btn ghost" id="setupClose" type="button">닫기</button></div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -264,53 +309,130 @@ main{padding-block:14px 24px}
   };
 
   const state = {
-    events: [], todos: [], weather: null,
+    events: [], todos: [], weather: null, weatherErr: false,
     month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    view: "dash", me: store.get("planner.me", "숭이"), editingWeather: false, modalDate: null,
+    view: "dash", me: store.get("planner.me", "숭이"), modalDate: null,
   };
   $("#meSel").value = state.me;
 
-  /* ---------- data layer (shared db, or in-memory when unavailable) ---------- */
-  let db = null, local = true;
-  const api = {
-    async add(col, data) {
-      if (db) return db.collection(col).add(data);
-      const id = Math.random().toString(36).slice(2);
-      state[col].push({ id, ...data }); renderAll();
-    },
-    async update(col, id, data) {
-      if (db) return db.doc(`${col}/${id}`).update(data);
-      Object.assign(state[col].find((x) => x.id === id) || {}, data); renderAll();
-    },
-    async remove(col, id) {
-      if (db) return db.doc(`${col}/${id}`).delete();
-      state[col] = state[col].filter((x) => x.id !== id); renderAll();
-    },
-    async setWeather(data) {
-      if (db) return db.doc("weather/today").set(data);
-      state.weather = data; renderAll();
-    },
-  };
-  const guard = (p) => Promise.resolve(p).catch((e) => toast(e?.code === "quota_exceeded" ? "저장 공간이 가득 찼어요. 지난 항목을 지워 주세요." : "저장하지 못했어요. 편집 권한이 있는지 확인해 주세요."));
+  /* ---------- shared storage (jsonblob.com, no login; the family code is the key) ---------- */
+  const API = "https://jsonblob.com/api/jsonBlob";
+  const empty = () => ({ app: "soongdoong-planner", rev: 0, events: [], todos: [], settings: { city: "서울" } });
+  const normalize = (d) => ({ ...empty(), ...(d && typeof d === "object" ? d : {}),
+    events: Array.isArray(d?.events) ? d.events : [], todos: Array.isArray(d?.todos) ? d.todos : [],
+    settings: { city: "서울", ...(d?.settings || {}) } });
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  let code = null, data = empty(), pending = 0, online = false;
+  try { data = normalize(JSON.parse(store.get("planner.cache", "null"))); } catch {}
 
-  function setStatus(on, text) {
-    $("#status").classList.toggle("on", on);
-    $("#statusText").textContent = text;
+  async function http(method, url, body) {
+    const r = await fetch(url, { method, cache: "no-store",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: body ? JSON.stringify(body) : undefined });
+    if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
+    return r;
+  }
+  async function createBlob(initial) {
+    const r = await http("POST", API, initial);
+    const id = r.headers.get("X-jsonblob-id") || (r.headers.get("Location") || "").split("/").pop();
+    if (!id) throw new Error("no id");
+    return id;
+  }
+  const pull = async () => normalize(await (await http("GET", `${API}/${code}`)).json());
+  async function push(d) { d.rev = (d.rev || 0) + 1; d.savedAt = Date.now(); await http("PUT", `${API}/${code}`, d); }
+
+  function setStatus(on, text) { online = on; $("#status").classList.toggle("on", on); $("#statusText").textContent = text; }
+  const okStatus = () => setStatus(true, "자동 동기화 중 · 둘 중 누가 바꿔도 몇 초 안에 반영돼요");
+  function failStatus(e) {
+    if (e?.status === 404) setStatus(false, "공유 저장소를 찾을 수 없어요 (링크가 틀렸거나 오래 안 써서 만료됐어요). 오른쪽 위 '공유'에서 새로 만들 수 있어요.");
+    else setStatus(false, "인터넷 연결을 확인해 주세요. 연결되면 자동으로 다시 맞춰요.");
   }
 
-  async function connect() {
-    try { db = window.claude?.use ? await window.claude.use("db") : null; } catch { db = null; }
-    if (!db) { setStatus(false, "이 화면에서는 공유 저장소를 쓸 수 없어 변경 내용이 저장되지 않아요 (claude.ai에 로그인해서 열어 주세요)"); return; }
-    local = false;
-    let confirmed = 0;
-    const timer = setTimeout(() => { if (confirmed < 3) setStatus(false, "저장소에 아직 연결하지 못했어요. 표시된 내용이 최신이 아닐 수 있어요."); }, 10000);
-    const ok = (snap) => { if (!snap.metadata.fromCache && ++confirmed >= 3) { clearTimeout(timer); setStatus(true, "실시간 동기화 중 · 둘 중 누가 바꿔도 바로 반영돼요"); } };
-    const err = () => { clearTimeout(timer); setStatus(false, "동기화가 끊겼어요. 페이지를 다시 열어 주세요."); };
-    const coll = (name) => db.collection(name).onSnapshot((s) => {
-      state[name] = s.docs.map((d) => ({ id: d.id, ...d.data() })); ok(s); renderAll();
-    }, err);
-    coll("events"); coll("todos");
-    db.doc("weather/today").onSnapshot((s) => { state.weather = s.exists ? s.data() : null; ok(s); renderWeather(); }, err);
+  function apply() {
+    state.events = data.events; state.todos = data.todos;
+    store.set("planner.cache", JSON.stringify(data));
+    if ($("#citySel") && $("#citySel").value !== data.settings.city) loadWeather();
+    renderAll();
+  }
+
+  // Every change: apply locally right away, then re-read the latest copy, apply the same change to it, and save.
+  let queue = Promise.resolve();
+  function mutate(fn) {
+    fn(data); apply();
+    if (!code) return;
+    pending++;
+    queue = queue.then(async () => {
+      try {
+        const latest = await pull(); fn(latest); await push(latest);
+        data = latest; okStatus();
+      } catch (e) { failStatus(e); toast("저장하지 못했어요. 연결되면 다시 시도해 주세요."); }
+      finally { pending--; apply(); }
+    });
+  }
+  const api = {
+    add(col, obj) { const id = uid(); mutate((d) => d[col].push({ id, ...obj })); },
+    update(col, id, patch) { mutate((d) => { const x = d[col].find((v) => v.id === id); if (x) Object.assign(x, patch); }); },
+    remove(col, id) { mutate((d) => { d[col] = d[col].filter((v) => v.id !== id); }); },
+    clearDone(owner) { mutate((d) => { d.todos = d.todos.filter((t) => !(t.owner === owner && t.done)); }); },
+    setCity(city) { mutate((d) => { d.settings.city = city; }); },
+  };
+  const guard = (x) => x;
+
+  async function refresh() {
+    if (!code || pending || document.hidden) return;
+    try {
+      const latest = await pull();
+      if (pending) return;
+      if (latest.rev !== data.rev || JSON.stringify(latest) !== JSON.stringify(data)) { data = latest; apply(); }
+      okStatus();
+    } catch (e) { failStatus(e); }
+  }
+
+  /* ---------- family code & sharing ---------- */
+  const codeFromText = (s) => { const m = String(s || "").trim().match(/([A-Za-z0-9_-]{8,})\/?\s*$/); return m ? m[1] : null; };
+  const shareLink = () => `${location.origin}${location.pathname}#${code}`;
+  function useCode(c) {
+    code = c; store.set("planner.code", c);
+    if (location.hash.slice(1) !== c) history.replaceState(null, "", "#" + c);
+    setStatus(false, "불러오는 중…"); refresh();
+  }
+  function showSetup(mode) {
+    $("#setup").hidden = false;
+    $("#setupStart").hidden = mode !== "start";
+    $("#setupShare").hidden = mode !== "share";
+    if (mode === "share") $("#shareLink").value = shareLink();
+  }
+  $("#createBtn").onclick = async () => {
+    const b = $("#createBtn"); b.disabled = true; b.textContent = "만드는 중…";
+    try {
+      const init = normalize(clone(data)); init.rev = 1;
+      const id = await createBlob(init);
+      data = init; useCode(id); apply(); showSetup("share");
+    } catch { toast("만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요."); }
+    b.disabled = false; b.textContent = "새 가족 플래너 만들기";
+  };
+  $("#joinForm").onsubmit = (e) => {
+    e.preventDefault();
+    const c = codeFromText($("#joinCode").value);
+    if (!c) { toast("공유 링크나 코드를 그대로 붙여넣어 주세요."); return; }
+    data = empty(); apply(); useCode(c); $("#setup").hidden = true;
+  };
+  $("#copyBtn").onclick = async () => {
+    try { await navigator.clipboard.writeText(shareLink()); toast("링크를 복사했어요. 카톡으로 보내 주세요!"); }
+    catch { $("#shareLink").select(); toast("링크를 길게 눌러 복사해 주세요."); }
+  };
+  $("#shareBtn").onclick = () => showSetup(code ? "share" : "start");
+  $("#setupClose").onclick = () => { $("#setup").hidden = true; };
+  $("#newFromShare").onclick = () => showSetup("start");
+  window.addEventListener("hashchange", () => { const c = codeFromText(location.hash.slice(1)); if (c && c !== code) { data = empty(); apply(); useCode(c); } });
+
+  function connect() {
+    const c = codeFromText(location.hash.slice(1)) || store.get("planner.code", null);
+    if (c) useCode(c); else { setStatus(false, "아직 공유 플래너가 없어요 · 오른쪽 위 '공유'를 눌러 시작하세요"); showSetup("start"); }
+    setInterval(refresh, 10000);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
   }
 
   /* ---------- clock ---------- */
@@ -320,11 +442,16 @@ main{padding-block:14px 24px}
     const h = n.getHours();
     $("#ampm").textContent = h < 12 ? "오전" : "오후";
     $("#clock").textContent = `${(h % 12) || 12}:${String(n.getMinutes()).padStart(2, "0")}`;
-    if (tick.last && tick.last !== ymd(n)) renderAll();
+    if (tick.last && tick.last !== ymd(n)) { renderAll(); loadWeather(); }
     tick.last = ymd(n);
   }
 
-  /* ---------- weather & outfit ---------- */
+  /* ---------- weather (Open-Meteo, automatic) & outfit ---------- */
+  const CITIES = { 서울: [37.5665, 126.978], 인천: [37.4563, 126.7052], 수원: [37.2636, 127.0286], 성남: [37.42, 127.1265],
+    고양: [37.6584, 126.832], 용인: [37.2411, 127.1776], 부천: [37.5034, 126.766], 화성: [37.1995, 126.8312], 남양주: [37.636, 127.2165],
+    춘천: [37.8813, 127.7298], 강릉: [37.7519, 128.8761], 청주: [36.6424, 127.489], 천안: [36.8151, 127.1139], 세종: [36.48, 127.289],
+    대전: [36.3504, 127.3845], 전주: [35.8242, 127.148], 광주: [35.1595, 126.8526], 대구: [35.8714, 128.6014], 포항: [36.019, 129.3435],
+    울산: [35.5384, 129.3114], 창원: [35.228, 128.6811], 부산: [35.1796, 129.0756], 제주: [33.4996, 126.5312] };
   const OUTFITS = [
     [28, "한여름", ["민소매", "반팔", "반바지", "린넨 원피스"]],
     [23, "더운 날", ["반팔", "얇은 셔츠", "반바지", "면바지"]],
@@ -335,54 +462,62 @@ main{padding-block:14px 24px}
     [5, "많이 추워요", ["코트", "가죽 자켓", "히트텍", "니트", "레깅스"]],
     [-99, "한겨울", ["롱패딩", "두꺼운 코트", "목도리", "장갑", "기모 제품"]],
   ];
-  const SKY = { 맑음: "sun", 구름조금: "partly", 흐림: "cloud", 비: "rain", 눈: "snow" };
-  function icon(kind) {
+  const skyOf = (c) => c === 0 ? ["맑음", "sun"] : c <= 2 ? ["구름 조금", "partly"] : c <= 48 ? ["흐림", "cloud"]
+    : (c >= 71 && c <= 77) || c === 85 || c === 86 ? ["눈", "snow"] : ["비", "rain"];
+  function icon(kind, cls = "w-icon") {
     const sun = '<circle cx="22" cy="22" r="9" fill="#ffc83a" stroke="#f29b1d" stroke-width="2"/>' +
       [0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<rect x="21" y="3" width="2" height="6" fill="#f29b1d" transform="rotate(${a} 22 22)"/>`).join("");
     const cloud = (x, y, c = "#fff") => `<path d="M${x} ${y}h20a6 6 0 0 0 0-12a8 8 0 0 0-15-2a6 6 0 0 0-5 14z" fill="${c}" stroke="#8aa6c2" stroke-width="2"/>`;
     const parts = { sun, partly: sun + cloud(14, 36), cloud: cloud(8, 30, "#eef3f8") + cloud(14, 38),
       rain: cloud(10, 28) + '<path d="M16 33l-2 6M23 33l-2 6M30 33l-2 6" stroke="#3a7fd5" stroke-width="2.5" stroke-linecap="round"/>',
       snow: cloud(10, 28) + '<g fill="#7fb2e6"><circle cx="15" cy="37" r="2"/><circle cx="23" cy="40" r="2"/><circle cx="31" cy="37" r="2"/></g>' };
-    return `<svg class="w-icon" viewBox="0 0 44 44" aria-hidden="true">${parts[kind] || sun}</svg>`;
+    return `<svg class="${cls}" viewBox="0 0 44 44" aria-hidden="true">${parts[kind] || sun}</svg>`;
+  }
+  let weatherCity = null;
+  async function loadWeather() {
+    const city = CITIES[data.settings.city] ? data.settings.city : "서울";
+    const [lat, lon] = CITIES[city];
+    weatherCity = city;
+    try {
+      const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        "&current=temperature_2m,apparent_temperature,weather_code" +
+        "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+        "&hourly=temperature_2m,weather_code&timezone=Asia%2FSeoul&forecast_days=1";
+      const j = await (await fetch(u, { cache: "no-store" })).json();
+      const hours = [8, 12, 16, 20].map((h) => ({ h, t: Math.round(j.hourly.temperature_2m[h]), c: j.hourly.weather_code[h] }));
+      state.weather = { city, temp: Math.round(j.current.temperature_2m), feel: Math.round(j.current.apparent_temperature),
+        code: j.current.weather_code, max: Math.round(j.daily.temperature_2m_max[0]), min: Math.round(j.daily.temperature_2m_min[0]),
+        rain: j.daily.precipitation_probability_max?.[0] ?? null, hours, at: new Date() };
+      state.weatherErr = false;
+    } catch { state.weatherErr = true; }
+    renderWeather();
   }
   function renderWeather() {
-    const el = $("#weather"), w = state.weather, fresh = w && w.date === todayStr();
-    if (state.editingWeather || !w) {
+    const el = $("#weather"), w = state.weather;
+    const cityOpts = Object.keys(CITIES).map((c) => `<option ${c === (weatherCity || data.settings.city) ? "selected" : ""}>${c}</option>`).join("");
+    const citySel = `<label class="city" for="citySel">지역 <select id="citySel">${cityOpts}</select></label>`;
+    if (!w) {
+      el.innerHTML = `<div class="w-main">${icon("partly")}<div class="w-sub"><b>${state.weatherErr ? "날씨를 불러오지 못했어요" : "날씨 불러오는 중…"}</b><br>${state.weatherErr ? "인터넷 연결 후 자동으로 다시 시도해요." : ""}</div></div><div></div><div class="w-tip"><span></span>${citySel}</div>`;
+    } else {
+      const [skyName, kind] = skyOf(w.code);
+      const base = Math.round((w.temp + w.max) / 2);
+      const [, label, items] = OUTFITS.find(([t]) => base >= t);
+      const gap = w.max - w.min;
+      const tip = w.rain != null && w.rain >= 50 ? `비 올 확률 ${w.rain}% · 우산 챙기세요 ☂` : kind === "snow" ? "눈 소식 · 미끄럼 주의, 방수 신발 추천"
+        : gap >= 10 ? `일교차 ${gap}°! 겉옷을 꼭 챙기세요` : base < 5 ? "핫팩 하나 챙기면 든든해요" : "나들이하기 괜찮은 날이에요";
       el.innerHTML = `
-        <div class="w-main">${icon(w ? SKY[w.sky] : "partly")}<div class="w-sub"><b>오늘 날씨 입력</b><br>휴대폰 날씨 앱을 보고 적어 주면<br>둘 다에게 옷차림이 바로 보여요.</div></div>
-        <form class="wform" id="wForm">
-          <label for="wT">지금 기온 °C<input id="wT" type="number" step="1" required value="${w?.temp ?? ""}"></label>
-          <label for="wMax">최고<input id="wMax" type="number" step="1" value="${w?.max ?? ""}"></label>
-          <label for="wMin">최저<input id="wMin" type="number" step="1" value="${w?.min ?? ""}"></label>
-          <label for="wSky">하늘<select id="wSky">${Object.keys(SKY).map((k) => `<option ${w?.sky === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
-          <button class="btn" type="submit">저장</button>
-          ${w ? '<button class="btn ghost" type="button" id="wCancel">취소</button>' : ""}
-        </form>`;
-      $("#wForm").onsubmit = (e) => {
-        e.preventDefault();
-        const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
-        const data = { temp: num("#wT"), max: num("#wMax"), min: num("#wMin"), sky: $("#wSky").value, date: todayStr(), by: state.me, at: Date.now() };
-        state.editingWeather = false; guard(api.setWeather(data)); renderWeather();
-      };
-      const c = $("#wCancel"); if (c) c.onclick = () => { state.editingWeather = false; renderWeather(); };
-      return;
+        <div class="w-main">${icon(kind)}
+          <div class="w-temp">${w.temp}°</div>
+          <div class="w-sub"><b>${skyName}</b><br>최고 ${w.max}° · 최저 ${w.min}°<br>체감 ${w.feel}°${w.rain != null ? ` · 강수 ${w.rain}%` : ""}</div>
+        </div>
+        <div class="outfit">
+          <div class="outfit-title">오늘 옷차림 · ${label}</div>
+          <div class="outfit-items">${items.map((i) => `<span class="chip">${i}</span>`).join("")}</div>
+          <div class="hours">${w.hours.map((x) => `<div><span>${x.h}시</span>${icon(skyOf(x.c)[1], "h-icon")}<b>${x.t}°</b></div>`).join("")}</div>
+        </div>
+        <div class="w-tip"><span>${tip}</span>${citySel}</div>`;
     }
-    const base = w.max != null ? Math.round((w.temp + w.max) / 2) : w.temp;
-    const [, label, items] = OUTFITS.find(([t]) => base >= t);
-    const gap = w.max != null && w.min != null ? w.max - w.min : 0;
-    let tip = gap >= 10 ? `일교차 ${gap}°! 겉옷을 꼭 챙기세요` : w.sky === "비" ? "우산 챙기세요 ☂" : w.sky === "눈" ? "미끄럼 주의, 방수 신발 추천" : base < 5 ? "핫팩 하나 챙기면 든든해요" : "나들이하기 괜찮은 날이에요";
-    el.innerHTML = `
-      <div class="w-main" style="${fresh ? "" : "opacity:.5"}">${icon(SKY[w.sky])}
-        <div class="w-temp">${esc(w.temp)}°</div>
-        <div class="w-sub"><b>${esc(w.sky)}</b><br>${w.max != null ? `최고 ${esc(w.max)}°` : ""} ${w.min != null ? `· 최저 ${esc(w.min)}°` : ""}</div>
-      </div>
-      <div class="outfit">
-        <div class="outfit-title">오늘 옷차림 · ${label}</div>
-        <div class="outfit-items">${items.map((i) => `<span class="chip">${i}</span>`).join("")}</div>
-      </div>
-      <div class="w-tip"><span>${fresh ? tip : `${md(w.date)}에 입력한 날씨예요. 오늘 날씨로 바꿔 주세요.`}</span>
-        <button class="linkbtn" id="wEdit">${fresh ? "날씨 수정" : "오늘 날씨 입력"}</button></div>`;
-    $("#wEdit").onclick = () => { state.editingWeather = true; renderWeather(); };
+    $("#citySel").onchange = (e) => { api.setCity(e.target.value); loadWeather(); };
   }
 
   /* ---------- calendar ---------- */
@@ -506,7 +641,7 @@ main{padding-block:14px 24px}
     } else if (el.dataset.date) openDay(el.dataset.date);
     else if (el.dataset.delEv) guard(api.remove("events", el.dataset.delEv));
     else if (el.dataset.delTodo) guard(api.remove("todos", el.dataset.delTodo));
-    else if (el.dataset.clear) state.todos.filter((t) => t.owner === el.dataset.clear && t.done).forEach((t) => guard(api.remove("todos", t.id)));
+    else if (el.dataset.clear) api.clearDone(el.dataset.clear);
   });
   document.addEventListener("change", (e) => {
     const id = e.target.dataset?.toggle;
@@ -538,6 +673,8 @@ main{padding-block:14px 24px}
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3500); }
 
   tick(); setInterval(tick, 5000);
-  renderAll(); renderWeather(); connect();
+  renderAll(); renderWeather(); connect(); loadWeather(); setInterval(loadWeather, 30 * 60 * 1000);
 })();
 </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "숭이둥이 플래너",
+  "short_name": "숭이둥이",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#e8f2fb",
+  "theme_color": "#7cc0ee",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
