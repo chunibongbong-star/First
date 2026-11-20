@@ -1,0 +1,543 @@
+<title>숭이둥이 플래너</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: sky-and-grass header band (clock + weather), then a two-column board:
+   big month calendar on the left, the two to-do lists and "오늘" on the right. */
+:root{
+  --sky-top:#7cc0ee; --sky-bot:#bfe3fa; --grass:#69b84a; --grass-dark:#4c9632;
+  --ground:#e8f2fb; --panel:#ffffff; --line:#b7d0e6; --ink:#24364a; --muted:#7489a0;
+  --soong:#ec6b95; --soong-bg:#fde3ec; --doong:#e9a623; --doong-bg:#fdf0d2;
+  --both:#4fa86a; --both-bg:#dcf1e2; --sun:#ff9a3c; --sat:#3a7fd5; --accent:#2f6fc0;
+  --f-pixel:"DotGothic16","Courier New",monospace;
+  --f-head:"Jua","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* header band */
+.sky{background:linear-gradient(var(--sky-top),var(--sky-bot));position:relative;
+  margin-top:calc(-1 * env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+.sky::after{content:"";display:block;height:14px;
+  background:repeating-linear-gradient(90deg,var(--grass) 0 10px,var(--grass-dark) 10px 12px);
+  border-top:3px solid var(--grass-dark)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1500px;margin:0 auto}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 24px;padding-block:12px 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;width:100%;justify-content:flex-end}
+.tab{border:2px solid #fff;background:rgba(255,255,255,.55);border-radius:8px;padding:5px 12px;font-family:var(--f-head);font-size:15px;display:flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{background:#fff;box-shadow:0 2px 0 var(--line)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.clockbox{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dateline{font-family:var(--f-head);font-size:22px;color:#fff;text-shadow:0 2px 0 rgba(30,70,120,.45)}
+.clock{font-family:var(--f-pixel);font-size:clamp(52px,9vw,96px);line-height:.95;color:#fff;letter-spacing:2px;
+  text-shadow:4px 0 0 #2b4a6e,-4px 0 0 #2b4a6e,0 4px 0 #2b4a6e,0 -4px 0 #2b4a6e,4px 4px 0 #2b4a6e,6px 7px 0 rgba(30,60,100,.35);
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:10px}
+.clock small{font-family:var(--f-head);font-size:18px;text-shadow:none;color:#2b4a6e;letter-spacing:0}
+.me{font-size:13px;color:#2b4a6e;display:flex;gap:6px;align-items:center}
+.me select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:2px 6px}
+
+/* weather */
+.weather{flex:1 1 420px;min-width:0;background:rgba(255,255,255,.93);border:2px solid var(--line);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;align-items:center}
+.w-main{display:flex;align-items:center;gap:10px}
+.w-icon{width:44px;height:44px}
+.w-temp{font-family:var(--f-pixel);font-size:44px;line-height:1}
+.w-sub{font-size:13px;color:var(--muted);line-height:1.4}
+.w-sub b{color:var(--ink);font-family:var(--f-head);font-weight:400;font-size:15px}
+.outfit{min-width:0}
+.outfit-title{font-family:var(--f-head);font-size:14px;color:var(--accent)}
+.outfit-items{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{font-size:12.5px;padding:2px 8px;border-radius:999px;background:#eef5fc;border:1px solid var(--line);white-space:nowrap}
+.w-tip{grid-column:1/-1;font-size:13px;color:#3c6a3a;border-top:1px dashed var(--line);padding-top:6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.linkbtn{border:none;background:none;color:var(--accent);font-size:13px;padding:0;text-decoration:underline}
+.wform{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.wform label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
+.wform input,.wform select{width:84px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:#fff}
+.wform select{width:auto}
+
+/* board */
+main{padding-block:14px 24px}
+.board{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0;box-shadow:0 3px 0 #d3e3f1}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.ph h2{margin:0;font-family:var(--f-head);font-weight:400;font-size:20px;display:flex;align-items:center;gap:8px}
+.ph h2::before{content:"";width:5px;height:18px;background:var(--accent);border-radius:2px}
+.legend{display:flex;gap:10px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;gap:4px;align-items:center}
+
+/* calendar */
+.calnav{display:flex;gap:4px;align-items:center}
+.calnav button{border:1px solid var(--line);background:#f4f9fe;border-radius:6px;padding:2px 10px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:2px solid var(--line)}
+.dow{text-align:center;font-family:var(--f-head);font-size:14px;padding:4px 0;color:var(--muted)}
+.dow:first-child{color:var(--sun)} .dow:last-child{color:var(--sat)}
+.day{min-height:96px;border-top:1px solid #e3edf6;padding:4px 3px;text-align:left;background:none;border-left:none;border-right:none;border-bottom:none;display:flex;flex-direction:column;gap:2px;min-width:0}
+.day:hover{background:#f3f8fd}
+.dnum{font-family:var(--f-pixel);font-size:17px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
+.day.sun .dnum{color:var(--sun)} .day.sat .dnum{color:var(--sat)}
+.day.out{opacity:.35}
+.day.today{background:#fff6ec}
+.day.today .dnum{background:var(--sun);color:#fff}
+.ev{font-size:12px;line-height:1.35;padding:1px 4px;border-left:3px solid;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-숭이{border-color:var(--soong);background:var(--soong-bg)}
+.who-둥이{border-color:var(--doong);background:var(--doong-bg)}
+.who-함께{border-color:var(--both);background:var(--both-bg)}
+.more{font-size:11px;color:var(--muted);padding-left:4px}
+
+/* todos */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.todo-head{display:flex;align-items:center;gap:8px;font-family:var(--f-head);font-size:19px;margin-bottom:6px}
+.badge{font-family:var(--f-body);font-size:12px;color:var(--muted)}
+.todos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.todo{display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px dashed #e3edf6;min-width:0}
+.todo input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.todo .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.todo.done .t{text-decoration:line-through;color:var(--muted)}
+.due{font-size:11px;padding:1px 6px;border-radius:999px;background:#eef5fc;color:var(--accent);white-space:nowrap}
+.due.late{background:#ffe6e0;color:#c4482b}
+.due.today{background:#fff0dc;color:#c66d00}
+.del{border:none;background:none;color:#b7c6d6;font-size:16px;padding:0 4px;line-height:1}
+.del:hover{color:#c4482b}
+.add{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pair>div{min-width:0}
+.add input[type=text]{flex:1 1 100%;min-width:0;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#fbfdff}
+.add input[type=date]{flex:1;min-width:0;width:auto;border:1px solid var(--line);border-radius:6px;padding:4px;background:#fbfdff;font-size:13px}
+.btn{border:none;border-radius:6px;padding:6px 12px;background:var(--accent);color:#fff;font-family:var(--f-head);white-space:nowrap}
+.btn.ghost{background:#eef5fc;color:var(--accent)}
+.empty{color:var(--muted);font-size:13px;padding:6px 2px}
+
+/* today */
+.today-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+.sub{font-family:var(--f-head);font-size:16px;margin:0 0 4px;color:var(--sun)}
+.sub.tmr{color:var(--accent)}
+.trow{display:flex;gap:8px;align-items:baseline;padding:3px 0;min-width:0}
+.trow time{font-family:var(--f-pixel);font-size:15px;color:var(--accent);width:46px;flex:none}
+.trow .tt{border-left:3px solid;padding-left:6px;min-width:0;overflow-wrap:anywhere}
+
+/* person view */
+.person{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+.person .todo{font-size:17px;padding:7px 2px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(20,40,70,.35);display:grid;place-items:center;padding:16px;z-index:20}
+.modal{background:#fff;border-radius:14px;border:2px solid var(--line);width:min(440px,100%);max-height:90vh;overflow:auto;padding:16px}
+.modal h3{margin:0 0 10px;font-family:var(--f-head);font-weight:400;font-size:22px}
+.mlist{list-style:none;padding:0;margin:0 0 12px;display:flex;flex-direction:column;gap:6px}
+.mlist li{display:flex;gap:8px;align-items:center;padding:6px 8px;border-left:4px solid;border-radius:6px}
+.mlist .tt{flex:1;min-width:0;overflow-wrap:anywhere}
+.mform{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mform label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.mform .full{grid-column:1/-1}
+.mform input,.mform select{border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fbfdff;width:100%}
+.mactions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+
+.status{font-size:12px;color:var(--muted);padding-block:6px 0;display:flex;gap:6px;align-items:center}
+.status .live{width:8px;height:8px;border-radius:50%;background:#bbb}
+.status.on .live{background:#3cb371;box-shadow:0 0 0 3px rgba(60,179,113,.2)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;z-index:30}
+
+@media (max-width:1000px){
+  .board,.person{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .pair,.today-grid{grid-template-columns:minmax(0,1fr)}
+  .day{min-height:64px}
+  .ev{font-size:10.5px;padding:0 2px}
+  .weather{grid-template-columns:1fr}
+  .tabs{justify-content:flex-start}
+  .add{flex-wrap:wrap}
+  .add input[type=date]{flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="sky">
+  <div class="wrap top">
+    <nav class="tabs" role="tablist" aria-label="보기">
+      <button class="tab" role="tab" data-view="dash" aria-selected="true">🏠 대시보드</button>
+      <button class="tab" role="tab" data-view="숭이" aria-selected="false"><span class="dot" style="background:var(--soong)"></span>숭이</button>
+      <button class="tab" role="tab" data-view="둥이" aria-selected="false"><span class="dot" style="background:var(--doong)"></span>둥이</button>
+    </nav>
+    <div class="clockbox">
+      <div class="dateline" id="dateline">&nbsp;</div>
+      <div class="clock"><small id="ampm"></small><span id="clock">--:--</span></div>
+      <label class="me" for="meSel">이 기기 사용자
+        <select id="meSel"><option>숭이</option><option>둥이</option></select>
+      </label>
+    </div>
+    <section class="weather" id="weather" aria-label="날씨와 옷차림"></section>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="dashView" class="board">
+    <div class="col">
+      <section class="panel" aria-label="달력">
+        <div class="ph">
+          <h2 id="calTitle">달력</h2>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--soong)"></i>숭이</span>
+            <span><i class="dot" style="background:var(--doong)"></i>둥이</span>
+            <span><i class="dot" style="background:var(--both)"></i>함께</span>
+          </div>
+          <div class="calnav">
+            <button id="prevM" aria-label="이전 달">◀</button>
+            <button id="todayM">오늘</button>
+            <button id="nextM" aria-label="다음 달">▶</button>
+          </div>
+        </div>
+        <div class="cal" id="cal"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel" aria-label="할 일">
+        <div class="pair">
+          <div id="todo-숭이"></div>
+          <div id="todo-둥이"></div>
+        </div>
+      </section>
+      <section class="panel" aria-label="오늘">
+        <div class="ph"><h2>오늘 할 일</h2><span class="badge" id="todayLabel"></span></div>
+        <div class="today-grid" id="today"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="personView" class="person" hidden>
+    <section class="panel" id="personTodos"></section>
+    <section class="panel">
+      <div class="ph"><h2 id="personUpTitle">다가오는 일정</h2></div>
+      <div id="personUp"></div>
+    </section>
+  </div>
+
+  <div class="status" id="status"><span class="live"></span><span id="statusText">연결 중…</span></div>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle"></h3>
+    <ul class="mlist" id="mList"></ul>
+    <form class="mform" id="mForm">
+      <label class="full" for="evTitle">일정 내용
+        <input id="evTitle" type="text" maxlength="60" placeholder="예: 치과 예약, 장보기" required>
+      </label>
+      <label for="evTime">시간 (선택)
+        <input id="evTime" type="time">
+      </label>
+      <label for="evWho">누구
+        <select id="evWho"><option>숭이</option><option>둥이</option><option>함께</option></select>
+      </label>
+      <div class="mactions full">
+        <button type="button" class="btn ghost" id="mClose">닫기</button>
+        <button type="submit" class="btn">일정 추가</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const PEOPLE = ["숭이", "둥이"];
+  const COLOR = { 숭이: "var(--soong)", 둥이: "var(--doong)", 함께: "var(--both)" };
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const todayStr = () => ymd(new Date());
+  const md = (s) => { const d = parse(s); return `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`; };
+
+  const store = {
+    get(k, f) { try { return localStorage.getItem(k) ?? f; } catch { return f; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  const state = {
+    events: [], todos: [], weather: null,
+    month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    view: "dash", me: store.get("planner.me", "숭이"), editingWeather: false, modalDate: null,
+  };
+  $("#meSel").value = state.me;
+
+  /* ---------- data layer (shared db, or in-memory when unavailable) ---------- */
+  let db = null, local = true;
+  const api = {
+    async add(col, data) {
+      if (db) return db.collection(col).add(data);
+      const id = Math.random().toString(36).slice(2);
+      state[col].push({ id, ...data }); renderAll();
+    },
+    async update(col, id, data) {
+      if (db) return db.doc(`${col}/${id}`).update(data);
+      Object.assign(state[col].find((x) => x.id === id) || {}, data); renderAll();
+    },
+    async remove(col, id) {
+      if (db) return db.doc(`${col}/${id}`).delete();
+      state[col] = state[col].filter((x) => x.id !== id); renderAll();
+    },
+    async setWeather(data) {
+      if (db) return db.doc("weather/today").set(data);
+      state.weather = data; renderAll();
+    },
+  };
+  const guard = (p) => Promise.resolve(p).catch((e) => toast(e?.code === "quota_exceeded" ? "저장 공간이 가득 찼어요. 지난 항목을 지워 주세요." : "저장하지 못했어요. 편집 권한이 있는지 확인해 주세요."));
+
+  function setStatus(on, text) {
+    $("#status").classList.toggle("on", on);
+    $("#statusText").textContent = text;
+  }
+
+  async function connect() {
+    try { db = window.claude?.use ? await window.claude.use("db") : null; } catch { db = null; }
+    if (!db) { setStatus(false, "이 화면에서는 공유 저장소를 쓸 수 없어 변경 내용이 저장되지 않아요 (claude.ai에 로그인해서 열어 주세요)"); return; }
+    local = false;
+    let confirmed = 0;
+    const timer = setTimeout(() => { if (confirmed < 3) setStatus(false, "저장소에 아직 연결하지 못했어요. 표시된 내용이 최신이 아닐 수 있어요."); }, 10000);
+    const ok = (snap) => { if (!snap.metadata.fromCache && ++confirmed >= 3) { clearTimeout(timer); setStatus(true, "실시간 동기화 중 · 둘 중 누가 바꿔도 바로 반영돼요"); } };
+    const err = () => { clearTimeout(timer); setStatus(false, "동기화가 끊겼어요. 페이지를 다시 열어 주세요."); };
+    const coll = (name) => db.collection(name).onSnapshot((s) => {
+      state[name] = s.docs.map((d) => ({ id: d.id, ...d.data() })); ok(s); renderAll();
+    }, err);
+    coll("events"); coll("todos");
+    db.doc("weather/today").onSnapshot((s) => { state.weather = s.exists ? s.data() : null; ok(s); renderWeather(); }, err);
+  }
+
+  /* ---------- clock ---------- */
+  function tick() {
+    const n = new Date();
+    $("#dateline").textContent = `${n.getMonth() + 1}월 ${n.getDate()}일 ${DOW[n.getDay()]}요일`;
+    const h = n.getHours();
+    $("#ampm").textContent = h < 12 ? "오전" : "오후";
+    $("#clock").textContent = `${(h % 12) || 12}:${String(n.getMinutes()).padStart(2, "0")}`;
+    if (tick.last && tick.last !== ymd(n)) renderAll();
+    tick.last = ymd(n);
+  }
+
+  /* ---------- weather & outfit ---------- */
+  const OUTFITS = [
+    [28, "한여름", ["민소매", "반팔", "반바지", "린넨 원피스"]],
+    [23, "더운 날", ["반팔", "얇은 셔츠", "반바지", "면바지"]],
+    [20, "선선함", ["긴팔 티", "얇은 가디건", "면바지", "청바지"]],
+    [17, "쌀쌀함", ["맨투맨", "얇은 니트", "가디건", "청바지"]],
+    [12, "꽤 쌀쌀", ["자켓", "가디건", "야상", "스타킹", "청바지"]],
+    [9, "추워요", ["트렌치코트", "자켓", "니트", "기모 바지"]],
+    [5, "많이 추워요", ["코트", "가죽 자켓", "히트텍", "니트", "레깅스"]],
+    [-99, "한겨울", ["롱패딩", "두꺼운 코트", "목도리", "장갑", "기모 제품"]],
+  ];
+  const SKY = { 맑음: "sun", 구름조금: "partly", 흐림: "cloud", 비: "rain", 눈: "snow" };
+  function icon(kind) {
+    const sun = '<circle cx="22" cy="22" r="9" fill="#ffc83a" stroke="#f29b1d" stroke-width="2"/>' +
+      [0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<rect x="21" y="3" width="2" height="6" fill="#f29b1d" transform="rotate(${a} 22 22)"/>`).join("");
+    const cloud = (x, y, c = "#fff") => `<path d="M${x} ${y}h20a6 6 0 0 0 0-12a8 8 0 0 0-15-2a6 6 0 0 0-5 14z" fill="${c}" stroke="#8aa6c2" stroke-width="2"/>`;
+    const parts = { sun, partly: sun + cloud(14, 36), cloud: cloud(8, 30, "#eef3f8") + cloud(14, 38),
+      rain: cloud(10, 28) + '<path d="M16 33l-2 6M23 33l-2 6M30 33l-2 6" stroke="#3a7fd5" stroke-width="2.5" stroke-linecap="round"/>',
+      snow: cloud(10, 28) + '<g fill="#7fb2e6"><circle cx="15" cy="37" r="2"/><circle cx="23" cy="40" r="2"/><circle cx="31" cy="37" r="2"/></g>' };
+    return `<svg class="w-icon" viewBox="0 0 44 44" aria-hidden="true">${parts[kind] || sun}</svg>`;
+  }
+  function renderWeather() {
+    const el = $("#weather"), w = state.weather, fresh = w && w.date === todayStr();
+    if (state.editingWeather || !w) {
+      el.innerHTML = `
+        <div class="w-main">${icon(w ? SKY[w.sky] : "partly")}<div class="w-sub"><b>오늘 날씨 입력</b><br>휴대폰 날씨 앱을 보고 적어 주면<br>둘 다에게 옷차림이 바로 보여요.</div></div>
+        <form class="wform" id="wForm">
+          <label for="wT">지금 기온 °C<input id="wT" type="number" step="1" required value="${w?.temp ?? ""}"></label>
+          <label for="wMax">최고<input id="wMax" type="number" step="1" value="${w?.max ?? ""}"></label>
+          <label for="wMin">최저<input id="wMin" type="number" step="1" value="${w?.min ?? ""}"></label>
+          <label for="wSky">하늘<select id="wSky">${Object.keys(SKY).map((k) => `<option ${w?.sky === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+          <button class="btn" type="submit">저장</button>
+          ${w ? '<button class="btn ghost" type="button" id="wCancel">취소</button>' : ""}
+        </form>`;
+      $("#wForm").onsubmit = (e) => {
+        e.preventDefault();
+        const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
+        const data = { temp: num("#wT"), max: num("#wMax"), min: num("#wMin"), sky: $("#wSky").value, date: todayStr(), by: state.me, at: Date.now() };
+        state.editingWeather = false; guard(api.setWeather(data)); renderWeather();
+      };
+      const c = $("#wCancel"); if (c) c.onclick = () => { state.editingWeather = false; renderWeather(); };
+      return;
+    }
+    const base = w.max != null ? Math.round((w.temp + w.max) / 2) : w.temp;
+    const [, label, items] = OUTFITS.find(([t]) => base >= t);
+    const gap = w.max != null && w.min != null ? w.max - w.min : 0;
+    let tip = gap >= 10 ? `일교차 ${gap}°! 겉옷을 꼭 챙기세요` : w.sky === "비" ? "우산 챙기세요 ☂" : w.sky === "눈" ? "미끄럼 주의, 방수 신발 추천" : base < 5 ? "핫팩 하나 챙기면 든든해요" : "나들이하기 괜찮은 날이에요";
+    el.innerHTML = `
+      <div class="w-main" style="${fresh ? "" : "opacity:.5"}">${icon(SKY[w.sky])}
+        <div class="w-temp">${esc(w.temp)}°</div>
+        <div class="w-sub"><b>${esc(w.sky)}</b><br>${w.max != null ? `최고 ${esc(w.max)}°` : ""} ${w.min != null ? `· 최저 ${esc(w.min)}°` : ""}</div>
+      </div>
+      <div class="outfit">
+        <div class="outfit-title">오늘 옷차림 · ${label}</div>
+        <div class="outfit-items">${items.map((i) => `<span class="chip">${i}</span>`).join("")}</div>
+      </div>
+      <div class="w-tip"><span>${fresh ? tip : `${md(w.date)}에 입력한 날씨예요. 오늘 날씨로 바꿔 주세요.`}</span>
+        <button class="linkbtn" id="wEdit">${fresh ? "날씨 수정" : "오늘 날씨 입력"}</button></div>`;
+    $("#wEdit").onclick = () => { state.editingWeather = true; renderWeather(); };
+  }
+
+  /* ---------- calendar ---------- */
+  const byTime = (a, b) => (a.time || "99").localeCompare(b.time || "99");
+  const eventsOn = (ds) => state.events.filter((e) => e.date === ds).sort(byTime);
+  function renderCal() {
+    const m = state.month, y = m.getFullYear(), mo = m.getMonth();
+    $("#calTitle").textContent = `${y}년 ${mo + 1}월`;
+    const start = addDays(m, -m.getDay());
+    const weeks = Math.ceil((m.getDay() + new Date(y, mo + 1, 0).getDate()) / 7);
+    const t = todayStr();
+    let html = DOW.map((d) => `<div class="dow">${d}</div>`).join("");
+    for (let i = 0; i < weeks * 7; i++) {
+      const d = addDays(start, i), ds = ymd(d), evs = eventsOn(ds);
+      const cls = ["day", d.getDay() === 0 && "sun", d.getDay() === 6 && "sat", d.getMonth() !== mo && "out", ds === t && "today"].filter(Boolean).join(" ");
+      html += `<button class="${cls}" data-date="${ds}" aria-label="${md(ds)} 일정 ${evs.length}개">
+        <span class="dnum">${d.getDate()}</span>
+        ${evs.slice(0, 3).map((e) => `<span class="ev who-${esc(e.who)}">${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</span>`).join("")}
+        ${evs.length > 3 ? `<span class="more">+${evs.length - 3}개 더</span>` : ""}
+      </button>`;
+    }
+    $("#cal").innerHTML = html;
+  }
+
+  /* ---------- modal ---------- */
+  function openDay(ds) {
+    state.modalDate = ds;
+    $("#evWho").value = state.me;
+    $("#overlay").hidden = false;
+    renderModal();
+    setTimeout(() => $("#evTitle").focus(), 0);
+  }
+  function renderModal() {
+    if (!state.modalDate) return;
+    const ds = state.modalDate, evs = eventsOn(ds);
+    $("#mTitle").textContent = `${parse(ds).getMonth() + 1}월 ${parse(ds).getDate()}일 ${DOW[parse(ds).getDay()]}요일`;
+    $("#mList").innerHTML = evs.length ? evs.map((e) => `<li class="who-${esc(e.who)}">
+      <span class="tt">${e.time ? `<b>${esc(e.time)}</b> ` : ""}${esc(e.title)} <small style="color:var(--muted)">· ${esc(e.who)}</small></span>
+      <button class="del" data-del-ev="${e.id}" aria-label="${esc(e.title)} 삭제">✕</button></li>`).join("")
+      : '<li style="border:none;color:var(--muted);padding:0">아직 일정이 없어요. 아래에서 추가해 보세요.</li>';
+  }
+  function closeModal() { state.modalDate = null; $("#overlay").hidden = true; }
+
+  /* ---------- todos ---------- */
+  function dueTag(t) {
+    if (!t.due) return "";
+    const today = todayStr();
+    const cls = t.done ? "" : t.due < today ? "late" : t.due === today ? "today" : "";
+    const label = t.due === today ? "오늘" : t.due === ymd(addDays(new Date(), 1)) ? "내일" : md(t.due);
+    return `<span class="due ${cls}">${label}</span>`;
+  }
+  const sortTodos = (a, b) => (a.done - b.done) || ((a.due || "9999").localeCompare(b.due || "9999")) || ((a.createdAt || 0) - (b.createdAt || 0));
+  function todoItem(t, showOwner) {
+    return `<li class="todo ${t.done ? "done" : ""}">
+      <input type="checkbox" id="cb-${t.id}" data-toggle="${t.id}" ${t.done ? "checked" : ""}>
+      <label class="t" for="cb-${t.id}">${showOwner ? `<span class="dot" style="background:${COLOR[t.owner]};margin-right:4px"></span>` : ""}${esc(t.text)}</label>
+      ${dueTag(t)}
+      <button class="del" data-del-todo="${t.id}" aria-label="${esc(t.text)} 삭제">✕</button></li>`;
+  }
+  function todoBlock(person, big) {
+    const list = state.todos.filter((t) => t.owner === person).sort(sortTodos);
+    const left = list.filter((t) => !t.done).length;
+    return `<div class="todo-head"><span class="dot" style="background:${COLOR[person]};width:12px;height:12px"></span>${person} 할 일 <span class="badge">${left}개 남음</span></div>
+      <ul class="todos">${list.length ? list.map((t) => todoItem(t)).join("") : `<li class="empty">할 일이 없어요 🎉</li>`}</ul>
+      <form class="add" data-add-todo="${person}">
+        <input type="text" id="new-${person}${big ? "-big" : ""}" maxlength="80" placeholder="${person} 할 일 추가" aria-label="${person} 할 일 추가" required>
+        <input type="date" id="due-${person}${big ? "-big" : ""}" aria-label="마감일 (선택)">
+        <button class="btn" type="submit">추가</button>
+      </form>
+      ${list.some((t) => t.done) ? `<button class="linkbtn" style="margin-top:6px" data-clear="${person}">완료한 항목 지우기</button>` : ""}`;
+  }
+  function renderTodos() {
+    PEOPLE.forEach((p) => { $(`#todo-${p}`).innerHTML = todoBlock(p); });
+  }
+
+  /* ---------- today ---------- */
+  function renderToday() {
+    const t = todayStr(), tm = ymd(addDays(new Date(), 1));
+    $("#todayLabel").textContent = md(t);
+    const evRow = (e) => `<div class="trow"><time>${e.time ? esc(e.time) : "종일"}</time><span class="tt" style="border-color:${COLOR[e.who]}">${esc(e.title)} <small style="color:var(--muted)">${esc(e.who)}</small></span></div>`;
+    const todayEv = eventsOn(t), tmrEv = eventsOn(tm);
+    const dueTodos = state.todos.filter((x) => x.due && (x.due === t || (x.due < t && !x.done))).sort(sortTodos);
+    $("#today").innerHTML = `
+      <div>
+        <p class="sub">오늘 일정</p>
+        ${todayEv.length ? todayEv.map(evRow).join("") : '<div class="empty">오늘은 일정이 없어요. 달력에서 날짜를 눌러 추가하세요.</div>'}
+        <p class="sub" style="margin-top:10px">오늘까지 할 일</p>
+        <ul class="todos">${dueTodos.length ? dueTodos.map((x) => todoItem(x, true)).join("") : '<li class="empty">마감이 오늘인 할 일이 없어요.</li>'}</ul>
+      </div>
+      <div>
+        <p class="sub tmr">내일 · ${md(tm)}</p>
+        ${tmrEv.length ? tmrEv.map(evRow).join("") : '<div class="empty">내일 일정 없음</div>'}
+      </div>`;
+  }
+
+  /* ---------- person view ---------- */
+  function renderPerson() {
+    const p = state.view; if (!PEOPLE.includes(p)) return;
+    $("#personTodos").innerHTML = todoBlock(p, true);
+    $("#personUpTitle").textContent = `${p}의 다가오는 일정 (2주)`;
+    const t = todayStr(), end = ymd(addDays(new Date(), 14));
+    const up = state.events.filter((e) => (e.who === p || e.who === "함께") && e.date >= t && e.date <= end)
+      .sort((a, b) => a.date.localeCompare(b.date) || byTime(a, b));
+    $("#personUp").innerHTML = up.length ? up.map((e) => `<div class="trow"><time style="width:78px;font-size:13px">${md(e.date)}</time>
+      <span class="tt" style="border-color:${COLOR[e.who]}">${e.time ? `<b>${esc(e.time)}</b> ` : ""}${esc(e.title)}</span></div>`).join("")
+      : '<div class="empty">2주 안에 잡힌 일정이 없어요.</div>';
+  }
+
+  function renderAll() { renderCal(); renderTodos(); renderToday(); renderPerson(); renderModal(); }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-date],[data-del-ev],[data-del-todo],[data-clear],[data-view]");
+    if (!el) return;
+    if (el.dataset.view) {
+      state.view = el.dataset.view;
+      document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", b === el));
+      $("#dashView").hidden = state.view !== "dash";
+      $("#personView").hidden = state.view === "dash";
+      renderPerson();
+    } else if (el.dataset.date) openDay(el.dataset.date);
+    else if (el.dataset.delEv) guard(api.remove("events", el.dataset.delEv));
+    else if (el.dataset.delTodo) guard(api.remove("todos", el.dataset.delTodo));
+    else if (el.dataset.clear) state.todos.filter((t) => t.owner === el.dataset.clear && t.done).forEach((t) => guard(api.remove("todos", t.id)));
+  });
+  document.addEventListener("change", (e) => {
+    const id = e.target.dataset?.toggle;
+    if (id) guard(api.update("todos", id, { done: e.target.checked }));
+  });
+  document.addEventListener("submit", (e) => {
+    const f = e.target.closest("[data-add-todo]"); if (!f) return;
+    e.preventDefault();
+    const owner = f.dataset.addTodo, txt = f.querySelector("input[type=text]"), due = f.querySelector("input[type=date]");
+    const text = txt.value.trim(); if (!text) return;
+    guard(api.add("todos", { owner, text, done: false, due: due.value || null, by: state.me, createdAt: Date.now() }));
+    txt.value = ""; due.value = "";
+  });
+  $("#mForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = $("#evTitle").value.trim(); if (!title) return;
+    guard(api.add("events", { date: state.modalDate, title, time: $("#evTime").value || null, who: $("#evWho").value, by: state.me, createdAt: Date.now() }));
+    $("#evTitle").value = ""; $("#evTime").value = "";
+  });
+  $("#mClose").onclick = closeModal;
+  $("#overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#overlay").hidden) closeModal(); });
+  $("#prevM").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); renderCal(); };
+  $("#nextM").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1); renderCal(); };
+  $("#todayM").onclick = () => { const n = new Date(); state.month = new Date(n.getFullYear(), n.getMonth(), 1); renderCal(); };
+  $("#meSel").onchange = (e) => { state.me = e.target.value; store.set("planner.me", state.me); };
+
+  let toastT;
+  function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3500); }
+
+  tick(); setInterval(tick, 5000);
+  renderAll(); renderWeather(); connect();
+})();
+</script>
