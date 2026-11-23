@@ -103,9 +103,18 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
 .throw { transform-box: fill-box; transform-origin: center; animation: throw 2.6s ease-in infinite; }
 @keyframes throw {
   0% { transform: translate(0, 0) rotate(0); opacity: 1; }
-  45% { transform: translate(33px, -32px) rotate(160deg); opacity: 1; }
-  80% { transform: translate(66px, 24px) rotate(330deg); opacity: 1; }
-  84%, 100% { transform: translate(66px, 26px) rotate(340deg); opacity: 0; }
+  45% { transform: translate(32px, -24px) rotate(160deg); opacity: 1; }
+  80% { transform: translate(65px, 100px) rotate(330deg); opacity: 1; }
+  84%, 100% { transform: translate(65px, 106px) rotate(340deg); opacity: 0; }
+}
+/* 세이의 양말이 통에 떨어지고 나면 하이가 바로 다시 꺼내 던짐 (같은 2.6초 주기) */
+.pull { transform-box: fill-box; transform-origin: center; animation: pull 2.6s ease-out 1.45s infinite backwards; }
+@keyframes pull {
+  0%, 30% { transform: translate(0, 8px) rotate(0); opacity: 0; }
+  34% { transform: translate(0, -6px) rotate(-20deg); opacity: 1; }
+  52% { transform: translate(38px, -48px) rotate(-170deg); opacity: 1; }
+  76%, 92% { transform: translate(82px, 124px) rotate(-340deg); opacity: 1; }
+  100% { transform: translate(82px, 124px) rotate(-340deg); opacity: 0; }
 }
 .zz { animation: zz 3.4s ease-out infinite; opacity: 0; }
 @keyframes zz { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(16px, -34px); opacity: 0; } }
@@ -119,6 +128,7 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
 @media (prefers-reduced-motion: reduce) {
   svg *, .bubble { animation: none !important; }
   .zz { opacity: 1; }
+  .pull { opacity: 0; }
 }
 </style>
 </head>
@@ -387,8 +397,7 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
       ${torso(hood)}
       <path d="M-11 -24 L11 -24 L13 -12 L-13 -12 Z" fill="#8597f5"/>
       <path d="M-5 -44 L-6 -34 M5 -44 L6 -34" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-      <g transform="translate(-31 -14) rotate(18)"><path d="M0 -9 V10 M-4 -4 H4 M-5 1 H5 M-4 6 H4" stroke="#b8c4d6" stroke-width="2" stroke-linecap="round"/><circle cx="0" cy="-11" r="3.6" fill="#b8c4d6"/><path d="M-4 12 L0 9 L4 12" stroke="#b8c4d6" stroke-width="2" fill="none" stroke-linecap="round"/></g>
-      ${ARM.down(1, hood, SKIN)}${ARM.up(-1, hood, SKIN)}
+      ${ARM.up(1, hood, SKIN)}${ARM.up(-1, hood, SKIN)}
       <g class="toss"><circle cx="31" cy="-72" r="5.5" fill="#f7f7fb" stroke="#cfcfe0" stroke-width="1.5"/><path d="M28 -73 L33 -71 M30 -76 L32 -69" stroke="#cfcfe0" stroke-width="1.2"/></g>
       ${head(SKIN)}${face({ mouth: openSmile })}
       <path d="M-28 -68 C-32 -90 -20 -102 -6 -101 L-2 -108 L4 -101 C10 -104 16 -106 14 -99 C26 -96 32 -84 28 -68 C24 -78 16 -80 10 -76 L6 -83 L0 -77 C-8 -82 -20 -80 -28 -68 Z" fill="${hair}"/>
@@ -492,27 +501,24 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
     // 미화 구역
     const broom = `<g transform="translate(530 0)"><path d="M114 64 L130 140" stroke="#c9925e" stroke-width="5" stroke-linecap="round"/>
       <path d="M120 134 L141 130 L150 156 Q137 160 124 160 Z" fill="#ffd77a"/><path d="M126 140 L130 158 M133 138 L138 157 M139 136 L145 155" stroke="#e8b84a" stroke-width="1.5"/></g>`;
-    const poke = `<g transform="translate(568 2)"><rect x="249" y="200" width="5" height="26" rx="2" fill="#ffd166" transform="rotate(-22 251 213)"/><path d="M247 196 l2 -5 l2 5 z" fill="#ff9fb2" transform="rotate(-22 251 213)"/>
-      <rect x="263" y="207" width="12" height="13" rx="3" fill="#9fd8ff"/><path d="M275 210 q4 0 4 3 q0 3 -4 3" stroke="#9fd8ff" stroke-width="2" fill="none"/></g>`;
 
-    // 개발 구역 (쓰레기통 + 흩어진 쓰레기)
-    const devMess = `<g transform="translate(40 173)">
-      <ellipse cx="320" cy="265" rx="30" ry="5" fill="#3b2f3a" opacity=".09"/>
-      <g transform="translate(342 245) rotate(-90)">
-        <ellipse cx="0" cy="-44" rx="20" ry="6.5" fill="#c6cdf4"/><ellipse cx="0" cy="-44" rx="16" ry="4.2" fill="#5b6290"/>
-        <path d="M-19 -44 Q0 -36 19 -44 L15 -5 Q14 0 9 0 L-9 0 Q-14 0 -15 -5 Z" fill="#a3b0e8"/>
-        <path d="M-8 -34 L-7 -8 M0 -33 V-8 M8 -34 L7 -8" stroke="#8592cc" stroke-width="2.5" stroke-linecap="round"/>
-      </g>
-      <g><circle cx="284" cy="262" r="7" fill="#f7f7fb" stroke="#cfcfe0" stroke-width="1.5"/><path d="M280 260 L288 263 M283 257 L285 267" stroke="#cfcfe0" stroke-width="1.2"/></g>
-      <g transform="translate(262 276) rotate(-70)"><path d="M0 -9 V9 M-4 -4 H4 M-5 1 H5 M-4 6 H4" stroke="#b8c4d6" stroke-width="2" stroke-linecap="round"/><circle cx="0" cy="-11" r="3.4" fill="#b8c4d6"/></g>
-      <g transform="translate(150 252) rotate(15)"><rect x="-5" y="-8" width="10" height="16" rx="3" fill="#ff8a8a"/><rect x="-5" y="-4" width="10" height="4" fill="#ffffff"/></g>
-      <g transform="translate(110 268) rotate(-12)"><rect x="-10" y="-7" width="20" height="14" rx="2" fill="#ffffff"/><path d="M-6 -2 h12 M-6 2 h8" stroke="#c9c3dd" stroke-width="1.5"/></g>
-      <g transform="translate(366 276)"><ellipse cx="0" cy="0" rx="5" ry="7" fill="#ffe7a8"/><path d="M0 -7 V-11" stroke="#8a6a3a" stroke-width="2"/><ellipse cx="0" cy="-8" rx="5" ry="2" fill="#ff8a8a"/><ellipse cx="0" cy="7" rx="5" ry="2" fill="#ff8a8a"/></g>
-      <g transform="translate(300 240) rotate(-30)"><rect x="-6" y="-3" width="12" height="6" rx="3" fill="#9fd8ff"/></g>
-    </g>`;
+    // 개발 구역: 세이가 버린 쓰레기를 하이가 다시 꺼내서 바닥에 늘어놓음
+    const SOCK = '<path d="M-4 -6 L3 -6 L3 2 Q8 2 8 6 Q8 9 3 9 L-4 9 Z" fill="#ff9fb2"/><rect x="-4" y="-6" width="7" height="3" fill="#ffffff"/>';
+    const sharedCan = trashcan(830, 340, '#7ccfae', `<g transform="translate(568 76)"><rect x="249" y="200" width="5" height="26" rx="2" fill="#ffd166" transform="rotate(-22 251 213)"/><path d="M247 196 l2 -5 l2 5 z" fill="#ff9fb2" transform="rotate(-22 251 213)"/></g>`) +
+      `<g class="pull"><g transform="translate(830 294)">${SOCK}</g></g>`;
+    const devMess = `
+      <g transform="translate(906 420) rotate(-25)">${SOCK}</g>
+      <g transform="translate(928 436) rotate(40)">${SOCK}</g>
+      <g transform="translate(918 428) rotate(5)"><rect x="-6" y="-7" width="12" height="13" rx="3" fill="#9fd8ff"/><path d="M6 -4 q4 0 4 3 q0 3 -4 3" stroke="#9fd8ff" stroke-width="2" fill="none"/></g>
+      <g><circle cx="918" cy="456" r="7" fill="#f7f7fb" stroke="#cfcfe0" stroke-width="1.5"/><path d="M914 454 L922 457 M917 451 L919 461" stroke="#cfcfe0" stroke-width="1.2"/></g>
+      <g transform="translate(850 456) rotate(-70)"><path d="M0 -9 V9 M-4 -4 H4 M-5 1 H5 M-4 6 H4" stroke="#b8c4d6" stroke-width="2" stroke-linecap="round"/><circle cx="0" cy="-11" r="3.4" fill="#b8c4d6"/></g>
+      <g transform="translate(880 474) rotate(15)"><rect x="-5" y="-8" width="10" height="16" rx="3" fill="#ff8a8a"/><rect x="-5" y="-4" width="10" height="4" fill="#ffffff"/></g>
+      <g transform="translate(936 482) rotate(-12)"><rect x="-10" y="-7" width="20" height="14" rx="2" fill="#ffffff"/><path d="M-6 -2 h12 M-6 2 h8" stroke="#c9c3dd" stroke-width="1.5"/></g>
+      <g transform="translate(902 494)"><ellipse cx="0" cy="0" rx="5" ry="7" fill="#ffe7a8"/><path d="M0 -7 V-11" stroke="#8a6a3a" stroke-width="2"/><ellipse cx="0" cy="-8" rx="5" ry="2" fill="#ff8a8a"/><ellipse cx="0" cy="7" rx="5" ry="2" fill="#ff8a8a"/></g>
+      <g transform="translate(860 430) rotate(-30)"><rect x="-6" y="-3" width="12" height="6" rx="3" fill="#ffd166"/></g>`;
 
     // 빈둥 구역 (침대째 들고 옴)
-    const bed = `<g transform="translate(600 168)">
+    const bed = `<g transform="translate(20 168)">
       <rect x="82" y="120" width="188" height="64" rx="26" fill="#cdb4f6"/>
       <rect x="92" y="126" width="168" height="10" rx="5" fill="#dccafb"/>
       <rect x="96" y="140" width="54" height="18" rx="9" fill="#ffffff"/>
@@ -523,17 +529,17 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
       <rect x="90" y="166" width="172" height="66" rx="16" fill="#fffaf2"/>
       <rect x="134" y="160" width="84" height="30" rx="15" fill="#ffffff" stroke="#efe6f7" stroke-width="2"/>
     </g>`;
-    const zz = `<g class="svgtxt" style="font-size:15px" transform="translate(600 168)">
+    const zz = `<g class="svgtxt" style="font-size:15px" transform="translate(20 168)">
       <text x="214" y="150" class="zz">Z</text><text x="226" y="138" class="zz" style="animation-delay:1.1s;font-size:12px">z</text><text x="206" y="134" class="zz" style="animation-delay:2.2s;font-size:10px">z</text></g>`;
-    const slippers = `<g transform="translate(904 438)"><ellipse cx="-8" cy="0" rx="7" ry="4.5" fill="#ff9fb2"/><ellipse cx="8" cy="1" rx="7" ry="4.5" fill="#ff9fb2"/><ellipse cx="-8" cy="-1.5" rx="4.5" ry="2.2" fill="#ffd0da"/><ellipse cx="8" cy="-.5" rx="4.5" ry="2.2" fill="#ffd0da"/></g>`;
-    const lamp = `<ellipse cx="910" cy="352" rx="16" ry="4" fill="#3b2f3a" opacity=".1"/><rect x="907" y="300" width="6" height="52" rx="3" fill="#e3c29c"/><ellipse cx="910" cy="352" rx="13" ry="4" fill="#e3c29c"/>
-      <path d="M892 302 L928 302 L920 276 L900 276 Z" fill="#fff3bf"/><ellipse cx="910" cy="276" rx="10" ry="3" fill="#fff9de"/>`;
+    const slippers = `<g transform="translate(350 440)"><ellipse cx="-8" cy="0" rx="7" ry="4.5" fill="#ff9fb2"/><ellipse cx="8" cy="1" rx="7" ry="4.5" fill="#ff9fb2"/><ellipse cx="-8" cy="-1.5" rx="4.5" ry="2.2" fill="#ffd0da"/><ellipse cx="8" cy="-.5" rx="4.5" ry="2.2" fill="#ffd0da"/></g>`;
+    const lamp = `<g transform="translate(-576 0)"><ellipse cx="910" cy="352" rx="16" ry="4" fill="#3b2f3a" opacity=".1"/><rect x="907" y="300" width="6" height="52" rx="3" fill="#e3c29c"/><ellipse cx="910" cy="352" rx="13" ry="4" fill="#e3c29c"/>
+      <path d="M892 302 L928 302 L920 276 L900 276 Z" fill="#fff3bf"/><ellipse cx="910" cy="276" rx="10" ry="3" fill="#fff9de"/></g>`;
 
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="다섯 직원이 함께 쓰는 사무실">` +
       roomBase('office', W, '#fbeef4', '#efe1d6') +
       // 바닥 구역 러그
       rug(12, 178, 296, 108, '#ffd9ea') + rug(330, 178, 300, 108, '#ffe0d2') + rug(652, 178, 296, 108, '#d3f1e4') +
-      rug(12, 362, 420, 148, '#dfe3ff') + rug(570, 362, 378, 148, '#fff0c2') +
+      rug(12, 362, 410, 148, '#fff0c2') + rug(552, 362, 396, 148, '#dfe3ff') +
       // 벽
       hangSign(110, 12, '공주팀', 'PRINCESS', '#ffb8d6') + mirror + hearts +
       sparkle(150, 96, .9, '#ffffff', .3) + sparkle(290, 40, .8, '#ffffff', 1.1) +
@@ -545,7 +551,6 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
       plant(286, 202, .85, '#c9b3ff') +
       plant(346, 222, 1.1, '#ffb59e') +
       desk(448, 214, 166, '#ebc7a3') + monitor(506, 157, 'chart') + plate + mug +
-      trashcan(830, 266, '#7ccfae', poke) +
       runway +
       // 뒷줄 직원
       charSVG({ id: 'joy', x: 160, y: 260, body: joyBody(), tc: '#ef7fae', walk: true, delay: .4 }) +
@@ -554,21 +559,22 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 
       charSVG({ id: 'sei', x: 735, y: 258, body: seiBody(), tc: '#56b98d', delay: .8 }) +
       sparkle(690, 240, .9, '#ffffff', 0) + sparkle(780, 278, .8, '#ffffff', .9) +
       plant(934, 282, .8, '#ffd27a') +
+      sharedCan +
       // 앞줄 (한 칸 앞으로)
       `<g transform="translate(0 50)">` +
-      desk(26, 362, 112, '#e9cfb4') + monitor(66, 305, 'code') +
-      desk(156, 362, 112, '#e9cfb4') + monitor(196, 305, 'code') +
-      standSign(330, 360, '개발팀', 'DEV', '#bcc5ff') +
-      plant(408, 364, .85, '#ffb59e') +
-      standSign(630, 360, '빈둥팀', 'LAZY', '#ffe08f') +
+      standSign(50, 360, '빈둥팀', 'LAZY', '#ffe08f') +
       lamp + bed +
-      mtable(500, 420, 124, '#f3d5bb', '#ffc4a8') +
-      devMess +
-      // 앞줄 직원
-      charSVG({ id: 'hai', x: 230, y: 430, body: haiBody(), tc: '#7f8ff0', delay: 1.2 }) +
-      charSVG({ id: 'sung', x: 600, y: 168, body: sungInBed(), tc: '#e2b73c', noShadow: true, slow: true, tagX: 176, tagY: 266 }) +
+      charSVG({ id: 'sung', x: 20, y: 168, body: sungInBed(), tc: '#e2b73c', noShadow: true, slow: true, tagX: 176, tagY: 266 }) +
       zz + slippers +
-      `</g></svg>`;
+      mtable(486, 420, 124, '#f3d5bb', '#ffc4a8') +
+      standSign(588, 360, '개발팀', 'DEV', '#bcc5ff') +
+      desk(628, 362, 96, '#e9cfb4') + monitor(664, 305, 'code') +
+      desk(734, 362, 96, '#e9cfb4') + monitor(770, 305, 'code') +
+      plant(944, 456, .8, '#ffb59e') +
+      `</g>` +
+      devMess +
+      charSVG({ id: 'hai', x: 880, y: 394, body: haiBody(), tc: '#7f8ff0', delay: 1.2 }) +
+      `</svg>`;
   }
 
   document.getElementById('office').innerHTML = `<div class="scroller"><div class="stage">${officeScene()}<div class="bubble" hidden></div></div></div>`;
